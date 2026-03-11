@@ -13,27 +13,25 @@ public abstract class CustomPotionModel : PotionModel, ICustomModel
         if (AutoAdd) CustomContentDictionary.AddModel(GetType());
     }
 
-    public virtual string PackedImagePath => ImageHelper.GetImagePath("atlases/potion_atlas.sprites/fire_potion.tres");
-    public virtual string PackedOutlinePath => ImageHelper.GetImagePath("atlases/potion_outline_atlas.sprites/fire_potion.tres");
+    public virtual string? PackedImagePath => null;
+    public virtual string? PackedOutlinePath => null;
     
     [HarmonyPatch(typeof(PotionModel), nameof(CustomPotionModel.PackedImagePath), MethodType.Getter)]
     private static class ImagePatch {
         static bool Prefix(PotionModel __instance, ref string __result) {
-            if (__instance is CustomPotionModel model) {
-                __result = model.PackedImagePath;
-                return false;
-            }
-            return true;
+            if (__instance is not CustomPotionModel model || model.PackedImagePath is not string path)
+                return true;
+            __result = path;
+            return false;
         }
     }
     [HarmonyPatch(typeof(PotionModel), nameof(CustomPotionModel.PackedOutlinePath), MethodType.Getter)]
     private static class OutlinePatch {
         static bool Prefix(PotionModel __instance, ref string __result) {
-            if (__instance is CustomPotionModel model) {
-                __result = model.PackedOutlinePath;
-                return false;
-            }
-            return true;
+            if (__instance is not CustomPotionModel model || model.PackedOutlinePath is not string path)
+                return true;
+            __result = path;
+            return false;
         }
     }
 }
