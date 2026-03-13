@@ -95,6 +95,8 @@ public class CurrentGeneratingRunState
 [HarmonyPatch(typeof(ActModel), nameof(ActModel.GenerateRooms))]
 class AddCustomAncientsToPool
 {
+    private static readonly FieldInfo RoomSet = AccessTools.Field(typeof(ActModel), "_rooms");
+    
     [HarmonyPrefix]
     static void AddToModelPool(ActModel __instance, List<AncientEventModel>? ____sharedAncientSubset)
     {
@@ -108,9 +110,10 @@ class AddCustomAncientsToPool
         toAdd.Sort((a, b) =>  string.Compare(a.Id.Entry, b.Id.Entry, StringComparison.Ordinal));
         
         toAdd.RemoveAll(ancient => !ancient.IsValidForAct(__instance) || ____sharedAncientSubset.Contains(ancient));
-        foreach (ActModel act in CurrentGeneratingRunState.State?.Acts ?? [])
+        foreach (var act in CurrentGeneratingRunState.State?.Acts ?? [])
         {
-            if (act == __instance) break;
+            if (RoomSet.GetValue(act) is not RoomSet { HasAncient: true }) continue;
+            if (act == __instance) continue;
             if (act.Ancient is CustomAncientModel customAncient) toAdd.Remove(customAncient);
         }
         ____sharedAncientSubset.AddRange(toAdd);
