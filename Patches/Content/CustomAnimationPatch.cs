@@ -26,6 +26,9 @@ namespace BaseLib.Patches.Content
                 _ => trigger.ToLowerInvariant()
             };
 
+            if (animPlayer.CurrentAnimation.Equals(animName) || animPlayer.CurrentAnimation.Equals(trigger))
+                animPlayer.Stop();
+            
             if (animPlayer.HasAnimation(animName))
                 animPlayer.Play(animName);
             else if (animPlayer.HasAnimation(trigger))

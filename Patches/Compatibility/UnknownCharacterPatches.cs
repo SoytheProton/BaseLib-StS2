@@ -65,6 +65,15 @@ public class UnknownCharacterPatches
     
     //ProgressSaveManager
     //TODO - allow custom epochs? For now there's a lot of things to add to support that.
+    [HarmonyPatch(typeof(ProgressSaveManager), "ObtainCharUnlockEpoch")]
+    private class SkipCharUnlockEpoch
+    {
+        [HarmonyPrefix]
+        private static bool SkipIfUnsupported(Player localPlayer)
+        {
+            return localPlayer.Character is not ICustomModel;
+        }
+    }
     [HarmonyPatch(typeof(ProgressSaveManager), "CheckFifteenBossesDefeatedEpoch")]
     private class SkipBossEpochCheck
     {
@@ -83,4 +92,5 @@ public class UnknownCharacterPatches
             return localPlayer.Character is not ICustomModel;
         }
     }
+    
 }

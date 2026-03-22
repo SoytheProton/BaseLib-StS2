@@ -8,6 +8,15 @@ namespace BaseLib.Extensions;
 
 public static class HarmonyExtensions
 {
+    /// <summary>
+    /// Not necessary! Use `MethodType.Async` in your HarmonyPatch annotation.
+    /// </summary>
+    /// <param name="harmony"></param>
+    /// <param name="asyncMethod"></param>
+    /// <param name="prefix"></param>
+    /// <param name="postfix"></param>
+    /// <param name="transpiler"></param>
+    /// <param name="finalizer"></param>
     public static void PatchAsyncMoveNext(this Harmony harmony, MethodInfo asyncMethod, HarmonyMethod? prefix = null, HarmonyMethod? postfix = null, HarmonyMethod? transpiler = null, HarmonyMethod? finalizer = null)
     {
         var moveNextMethod = asyncMethod.StateMachineType().GetMethod("MoveNext", BindingFlags.NonPublic | BindingFlags.Instance);
