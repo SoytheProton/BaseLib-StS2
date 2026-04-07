@@ -56,6 +56,7 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
 
     public static T CreateFromScene(string scenePath)
     {
+        if (!scenePath.EndsWith(".tscn")) BaseLibMain.Logger.Warn($"Attempting to create {typeof(T).Name} from scene {scenePath} with unusual file extension");
         return CreateFromScene(PreloadManager.Cache.GetScene(scenePath));
     }
     public static T CreateFromScene(PackedScene scene)
@@ -219,7 +220,7 @@ public abstract class NodeFactory
     // Both dictionaries are concurrent — _factories is written during Init on the main thread
     // and read from the Instantiate postfix which can fire from any thread during asset loading.
     private static readonly ConcurrentDictionary<Type, NodeFactory> _factories = new();
-    private static readonly ConcurrentDictionary<string, Type> _sceneTypes = new();
+    private static readonly ConcurrentDictionary<string, (Type, Action<Node>?)> _registeredScenes = new();
 
     // Prevents recursion when the postfix triggers during a factory conversion.
     // ThreadStatic is correct here: Godot node creation is main-thread, but this also
@@ -239,28 +240,28 @@ public abstract class NodeFactory
     /// Register a scene path to be auto-converted to the specified node type on Instantiate.
     /// The node type must have a NodeFactory registered for it.
     /// </summary>
-    public static void RegisterSceneType<TNode>(string scenePath) where TNode : Node
+    public static void RegisterSceneType<TNode>(string scenePath, Action<TNode>? postConversionAction = null) where TNode : Node
     {
-        RegisterSceneType(scenePath, typeof(TNode));
+        RegisterSceneType(scenePath, (typeof(TNode), postConversionAction));
     }
 
     /// <summary>
     /// Register a scene path to be auto-converted to the specified node type on Instantiate.
     /// Logs a warning if the path was already registered for a different type (silent overwrite).
     /// </summary>
-    public static void RegisterSceneType(string scenePath, Type nodeType)
+    public static void RegisterSceneType<TNode>(string scenePath, (Type, Action<TNode>?) nodeType) where TNode : Node
     {
         if (string.IsNullOrWhiteSpace(scenePath))
         {
-            BaseLibMain.Logger.Warn($"Ignoring RegisterSceneType({nodeType.Name}) with null/empty path");
+            BaseLibMain.Logger.Warn($"Ignoring RegisterSceneType({nodeType.Item1.Name}) with null/empty path");
             return;
         }
 
-        if (_sceneTypes.TryGetValue(scenePath, out var existing) && existing != nodeType)
-            BaseLibMain.Logger.Warn($"Overwriting scene registration for '{scenePath}': {existing.Name} → {nodeType.Name}");
+        if (_registeredScenes.TryGetValue(scenePath, out var existing) && existing.Item1 != nodeType.Item1)
+            BaseLibMain.Logger.Warn($"Overwriting scene registration for '{scenePath}': {existing.Item1.Name} → {nodeType.Item1.Name}");
 
-        _sceneTypes[scenePath] = nodeType;
-        BaseLibMain.Logger.Info($"Registered scene '{scenePath}' for auto-conversion to {nodeType.Name}");
+        _registeredScenes[scenePath] = (nodeType.Item1, nodeType.Item2 as Action<Node>);
+        BaseLibMain.Logger.Info($"Registered scene '{scenePath}' for auto-conversion to {nodeType.Item1.Name}");
     }
 
     internal static void RegisterFactory(Type nodeType, NodeFactory factory)
@@ -286,12 +287,12 @@ public abstract class NodeFactory
 
         var path = scene.ResourcePath;
         if (string.IsNullOrEmpty(path)) return false;
-        if (!_sceneTypes.TryGetValue(path, out var expectedType)) return false; //No registered conversion
-        if (expectedType.IsInstanceOfType(result)) return false; // already the right type
+        if (!_registeredScenes.TryGetValue(path, out var sceneInfo)) return false; //No registered conversion
+        if (sceneInfo.Item1.IsInstanceOfType(result)) return false; // already the right type
 
-        if (!_factories.TryGetValue(expectedType, out var factory))
+        if (!_factories.TryGetValue(sceneInfo.Item1, out var factory))
         {
-            BaseLibMain.Logger.Warn($"Scene '{path}' registered for {expectedType.Name} but no factory exists for that type");
+            BaseLibMain.Logger.Warn($"Scene '{path}' registered for {sceneInfo.Item1.Name} but no factory exists for that type");
             return false;
         }
 
@@ -307,6 +308,8 @@ public abstract class NodeFactory
             // Only log the first conversion per path to avoid spam
             if (_loggedConversions.TryAdd(path, 0))
                 BaseLibMain.Logger.Info($"Auto-converted '{path}' from {sourceTypeName} to {converted.GetType().Name}");
+
+            sceneInfo.Item2?.Invoke(converted);
 
             result = converted;
             return true;

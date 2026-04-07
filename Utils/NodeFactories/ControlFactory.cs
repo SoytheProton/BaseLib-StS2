@@ -21,7 +21,9 @@ internal class ControlFactory : NodeFactory<Control>
                     Size = imgSize,
                     Texture = img,
                     PivotOffset = imgSize / 2,
-                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+                    MouseFilter = Control.MouseFilterEnum.Ignore
                 };
                 
                 return visuals;

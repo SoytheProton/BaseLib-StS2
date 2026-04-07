@@ -35,11 +35,11 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel, ILoca
     public virtual string? CustomTrailPath => null;
     public virtual string? CustomIconTexturePath => null; //smaller icon used in popup showing saved run info
     /// <summary>
-    /// Path to a scene for top left in-run icon and compendium pool filter
+    /// Path to a scene for top left in-run icon, stats screen, daily run icon, and run history icon.
     /// </summary>
     public virtual string? CustomIconPath => null;
     /// <summary>
-    /// Generate icon for in-run top left and compendium pool filter.
+    /// Generate icon for top left in-run icon, stats screen, daily run icon, and run history icon.
     /// Takes precedence over CustomIconPath.
     /// </summary>
     public virtual Control? CustomIcon => null;
