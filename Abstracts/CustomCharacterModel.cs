@@ -11,6 +11,7 @@ using BaseLib.Extensions;
 using BaseLib.Patches.Content;
 using BaseLib.Utils.NodeFactories;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Nodes.RestSite;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 
 namespace BaseLib.Abstracts;
@@ -59,6 +60,7 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel, ILoca
     public virtual string? CustomArmRockTexturePath => null;
     public virtual string? CustomArmPaperTexturePath => null;
     public virtual string? CustomArmScissorsTexturePath => null;
+//    public virtual string? CustomCookieTexturePath => null;
 
     /// <summary>
     /// Override this or place your scene at res://scenes/screens/char_select/char_select_bg_class_name.tscn
@@ -170,8 +172,10 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel, ILoca
     public void RegisterSceneConversions()
     {
         CustomVisualPath?.RegisterSceneForConversion<NCreatureVisuals>();
-        CustomEnergyCounterPath?.RegisterSceneForConversion<NEnergyCounter>();
+        CustomRestSiteAnimPath?.RegisterSceneForConversion<NRestSiteCharacter>();
         CustomMerchantAnimPath?.RegisterSceneForConversion<NMerchantCharacter>();
+        
+        CustomEnergyCounterPath?.RegisterSceneForConversion<NEnergyCounter>();
     }
 }
     
