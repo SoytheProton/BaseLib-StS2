@@ -47,7 +47,7 @@ public partial class LogListener : Godot.Logger
         var formatted = $"[{level}] {cleanMsg}";
         NLogWindow.AddLog(formatted);
 
-        if (level == "ERROR") NLogWindow.OpenOnErr();
+        if (level == "ERROR") Callable.From(NLogWindow.OpenOnErr).CallDeferred();
     }
 
     public override void _LogError(string function, string file, int line, string code, string rationale, bool editorNotify, int errorType,
@@ -63,7 +63,7 @@ public partial class LogListener : Godot.Logger
 
         NLogWindow.AddLog(msg.ToString());
         
-        NLogWindow.OpenOnErr();
+        Callable.From(NLogWindow.OpenOnErr).CallDeferred();
     }
 }
 
