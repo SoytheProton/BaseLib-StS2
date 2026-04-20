@@ -67,6 +67,11 @@ public class AddedNode<TParentType, TNode> : SpireField<TParentType, TNode> wher
             return scene;
         })
     { }
+    
+    public new void Set(TParentType obj, TNode? val)
+    {
+        throw new InvalidOperationException("The value of an AddedNode should not be set. Instead, modify the node already within the scene.");
+    }
 
     private void PatchNodeReady()
     {
@@ -137,6 +142,7 @@ internal interface ISavedSpireField
 
 /// <summary>
 /// A SpireField whose value will automatically be saved and loaded.
+/// Only functions on model types that support SavedProperty, so mainly just cards and relics.
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TVal"></typeparam>
