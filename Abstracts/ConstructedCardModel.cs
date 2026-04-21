@@ -33,11 +33,22 @@ public abstract class ConstructedCardModel(
     protected readonly List<(CardKeyword, UpgradeType)> UpgradeKeywords = [];
     private readonly List<DynamicVar> _constructedDynamicVars = [];
     private readonly List<TooltipSource> _hoverTips = [];
+    private readonly List<MultiTooltipSource> _multiHoverTips = [];
     private readonly HashSet<CardTag> _constructedTags = [];
 
     protected sealed override IEnumerable<DynamicVar> CanonicalVars => _constructedDynamicVars;
     public sealed override IEnumerable<CardKeyword> CanonicalKeywords => _cardKeywords;
-    protected sealed override IEnumerable<IHoverTip> ExtraHoverTips => _hoverTips.Select(tip => tip.Tip(this));
+    protected sealed override IEnumerable<IHoverTip> ExtraHoverTips
+    {
+        get
+        {
+            foreach (var tip in _hoverTips.Select(tip => tip.Tip(this)))
+                yield return tip;
+            foreach (var tip in _multiHoverTips.SelectMany(multiTip => multiTip.Tips(this)))
+                yield return tip;
+        }
+    }
+    
     protected sealed override HashSet<CardTag> CanonicalTags => _constructedTags;
 
     protected ConstructedCardModel WithVars(params DynamicVar[] vars)
@@ -330,6 +341,15 @@ public abstract class ConstructedCardModel(
     protected ConstructedCardModel WithTip(TooltipSource tipSource)
     {
         _hoverTips.Add(tipSource);
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds multiple hover tips to the card.
+    /// </summary>
+    protected ConstructedCardModel WithTips(Func<CardModel, IEnumerable<IHoverTip>> multiTipSource)
+    {
+        _multiHoverTips.Add(new MultiTooltipSource(multiTipSource));
         return this;
     }
     
