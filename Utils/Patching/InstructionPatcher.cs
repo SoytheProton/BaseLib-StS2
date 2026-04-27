@@ -177,7 +177,14 @@ public class InstructionPatcher(IEnumerable<CodeInstruction> instructions)
             case (int)OpCodeValues.Ldarg:
             case (int)OpCodeValues.Ldloc:
             case (int)OpCodeValues.Stloc:
-                operand = ((LocalBuilder)instruction.operand).LocalIndex;
+                if (instruction.operand is LocalBuilder localBuilder)
+                {
+                    operand = localBuilder.LocalIndex;
+                }
+                else
+                {
+                    operand = Convert.ToInt32(instruction.operand);
+                }
                 break;
             default:
                 throw new Exception($"Unsupported opcode for GetIndexOperand: {instruction.opcode}");

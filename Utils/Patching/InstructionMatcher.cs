@@ -142,6 +142,30 @@ public class InstructionMatcher() : IMatcher
 
     //Building
     //https://learn.microsoft.com/en-us/dotnet/api/system.reflection.emit.opcodes.add?view=net-10.0
+    //Special multi-possible cases
+    public InstructionMatcher stloc_any()
+    {
+        _target.Add(new InstructionMatch([
+            OpCodes.Stloc,
+            OpCodes.Stloc_0,
+            OpCodes.Stloc_1,
+            OpCodes.Stloc_2,
+            OpCodes.Stloc_3,
+            OpCodes.Stloc_S,
+        ]));
+        return this;
+    }
+
+    public InstructionMatcher call_any()
+    {
+        _target.Add(new InstructionMatch([
+            OpCodes.Call,
+            OpCodes.Callvirt
+        ]));
+        return this;
+    }
+    
+    //Normal opcodes
     public InstructionMatcher opcode(OpCode opCode)
     {
         _target.Add(new(opCode));
@@ -195,18 +219,6 @@ public class InstructionMatcher() : IMatcher
     public InstructionMatcher ldloc_3()
     {
         _target.Add(new(OpCodes.Ldloc_3));
-        return this;
-    }
-    public InstructionMatcher stloc_any()
-    {
-        _target.Add(new InstructionMatch([
-            OpCodes.Stloc,
-            OpCodes.Stloc_0,
-            OpCodes.Stloc_1,
-            OpCodes.Stloc_2,
-            OpCodes.Stloc_3,
-            OpCodes.Stloc_S,
-        ]));
         return this;
     }
     public InstructionMatcher stloc_0()
