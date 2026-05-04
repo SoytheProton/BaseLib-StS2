@@ -17,14 +17,7 @@ public class DarvAncientCardPatch
     {
         if (_customTome == null)
         {
-            _customTome = new()
-            {
-                { ModelDb.Character<Ironclad>(), ModelDb.Card<Corruption>().Id },
-                { ModelDb.Character<Silent>(), ModelDb.Card<WraithForm>().Id },
-                { ModelDb.Character<Regent>(), ModelDb.Card<TheSealedThrone>().Id },
-                { ModelDb.Character<Necrobinder>(), ModelDb.Card<ForbiddenGrimoire>().Id },
-                { ModelDb.Character<Defect>(), ModelDb.Card<BiasedCognition>().Id }
-            };
+            _customTome = [];
             foreach (var cardModel in ModelDb.AllCards)
             {
                 if (cardModel is ITomeCard target)
@@ -35,6 +28,7 @@ public class DarvAncientCardPatch
             }
         }
 
-        __instance.AncientCard = _customTome[player.Character];
+        if(_customTome.TryGetValue(player.Character, out var cardId))
+            __instance.AncientCard = cardId;
     }
 }
