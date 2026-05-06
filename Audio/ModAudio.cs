@@ -328,23 +328,24 @@ public class AutoModAudio(string folder)
 
 public record ModSound
 {
-    private static readonly Dictionary<string, AudioStream> CachedStreams = new();
-    
-    public ModSound(string file)
+    private static readonly Dictionary<string, AudioStream> CachedStreams = [];
+    private static readonly Dictionary<string, float> VolumeOffsets = [];
+
+    public static void SetSoundDefaultVolumeOffset(string file, float offset)
     {
-        File = file;
-        SoundType = ModAudio.SoundType.Sfx;
-    }
-    
-    public ModSound(string file, ModAudio.SoundType soundType)
-    {
-        File = file;
-        SoundType = soundType;
+        VolumeOffsets[file.SimplifyPath()] = offset;
     }
 
-    public string File { get; set; }
-    public ModAudio.SoundType SoundType { get; set; }
-    public float VolumeOffset { get; set; } = 0f;
+    public ModSound(string file, ModAudio.SoundType soundType = ModAudio.SoundType.Sfx)
+    {
+        File = file.SimplifyPath();
+        SoundType = soundType;
+        VolumeOffset = VolumeOffsets.GetValueOrDefault(file, 0f);
+    }
+
+    public string File { get; }
+    public ModAudio.SoundType SoundType { get; }
+    public float VolumeOffset { get; set; }
 
 
     public virtual AudioStream? GetOrLoadStream()
@@ -377,6 +378,7 @@ public record ModSound
     /// <returns></returns>
     public static implicit operator ModSound(string path)
     {
+        path = path.SimplifyPath();
         if (!_convertedSounds.TryGetValue(path, out var sound))
         {
             _convertedSounds[path] = sound = new ModSound(path);
