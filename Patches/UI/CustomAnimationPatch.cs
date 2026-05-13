@@ -62,7 +62,7 @@ static class CustomAnimationPatch
     {
         if (__instance.HasSpineAnimation) return true;
         
-        BaseLibMain.Logger.Info($"SetAnimationTrigger called for {trigger} without spine animation");
+        BaseLibMain.Logger.Debug($"SetAnimationTrigger called for {trigger} on creature without spine animation");
             
         var animName = trigger switch
         {
