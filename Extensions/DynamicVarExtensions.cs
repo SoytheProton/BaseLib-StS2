@@ -14,7 +14,7 @@ namespace BaseLib.Extensions;
 
 public static class DynamicVarExtensions
 {
-    public static readonly SpireField<DynamicVar, Func<IHoverTip>> DynamicVarTips = new(() => null);
+    public static readonly SpireField<DynamicVar, Func<DynamicVar, IHoverTip>> DynamicVarTips = new(() => null);
     public static readonly SpireField<DynamicVar, decimal?> DynamicVarUpgrades = new(() => null);
 
     public static TDynamicVar WithUpgrade<TDynamicVar>(this TDynamicVar dynamicVar, decimal upgradeValue) where TDynamicVar : DynamicVar
@@ -57,13 +57,13 @@ public static class DynamicVarExtensions
     {
         string key = locKey ?? var.GetType().GetPrefix() + StringHelper.Slugify(var.Name);
 
-        DynamicVarTips[var] = () =>
+        DynamicVarTips[var] = (locVar) =>
         {
             LocString locString = new(locTable, key + ".title");
             LocString locString2 = new(locTable, key + ".description");
 
-            locString.Add(var); //Dynamic var tip should not refer to any variables other than itself...
-            locString2.Add(var);
+            locString.Add(locVar); //Dynamic var tip should not refer to any variables other than itself...
+            locString2.Add(locVar);
 
             return new HoverTip(locString, locString2);
         };
