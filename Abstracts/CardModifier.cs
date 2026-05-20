@@ -68,20 +68,20 @@ public abstract class CardModifier : AbstractModel
 
         public CardModifier ToRealMod(CardModel owner)
         {
-            var mod = (CardModifier) ModelDb.GetById<CardModifier>(Id).MutableClone();
+            var mod = (CardModifier) ModelDb.GetById<CardModifier>(Id!).MutableClone();
             mod.Owner = owner;
             mod.LoadSaveData(this);
             return mod;
         }
         
-        public ModelId Id { get; set; }
+        public ModelId? Id { get; set; }
         public Dictionary<string, int> IntProperties { get; set; } = [];
         public Dictionary<string, string> AdditionalProperties { get; set; } = [];
 
         /// <inheritdoc />
         public void Serialize(PacketWriter writer)
         {
-            writer.WriteModelEntry(Id);
+            writer.WriteModelEntry(Id!);
             writer.WriteInt(IntProperties.Count);
             foreach (var entry in IntProperties)
             {
@@ -99,7 +99,7 @@ public abstract class CardModifier : AbstractModel
         /// <inheritdoc />
         public void Deserialize(PacketReader reader)
         {
-            reader.ReadModelIdAssumingType<CardModifier>();
+            Id = reader.ReadModelIdAssumingType<CardModifier>();
             
             int capacity = reader.ReadInt();
             IntProperties = new(capacity);
@@ -135,9 +135,9 @@ public abstract class CardModifier : AbstractModel
         
     }
 
-    private static void LoadModifierSaves(CardModel card, List<ModifierSave> modifiers)
+    private static void LoadModifierSaves(CardModel card, List<ModifierSave>? modifiers)
     {
-        _modifiers[card] = modifiers.Select(mod => mod.ToRealMod(card)).ToList();
+        _modifiers[card] = modifiers?.Select(mod => mod.ToRealMod(card)).ToList() ?? [];
     }
     
     

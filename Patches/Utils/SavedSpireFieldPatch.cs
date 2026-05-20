@@ -1,3 +1,4 @@
+using BaseLib.Patches.Saves;
 using BaseLib.Utils;
 using Godot;
 using HarmonyLib;
@@ -50,7 +51,14 @@ static class SavedSpireFieldPatch
 
         foreach (var field in RegisteredFields)
         {
-            InjectNameIntoBaseGameCache(field.Name);
+            if (field.IsBasegameSupported)
+            {
+                InjectNameIntoBaseGameCache(field.Name);
+            }
+            else if (!field.RegisterCustomSave())
+            {
+                BaseLibMain.Logger.Error($"SavedSpireField {field.Name} will not be saved as it is of an unsupported type.");
+            }
         }
     }
     

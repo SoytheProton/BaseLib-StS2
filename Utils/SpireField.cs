@@ -1,8 +1,10 @@
 using System.Runtime.CompilerServices;
+using BaseLib.Patches.Saves;
 using BaseLib.Patches.Utils;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace BaseLib.Utils;
@@ -213,11 +215,14 @@ internal interface ISavedSpireField
     
     protected static bool IsTypeSupported(Type t) =>
         SupportedTypes.Contains(t) || t.IsEnum || (t.IsArray && t.GetElementType()!.IsEnum);
-    
+
+    public bool IsBasegameSupported { get; }
+
     string Name { get; }
     Type TargetType { get; }
     void Export(object model, SavedProperties props);
     void Import(object model, SavedProperties props);
+    bool RegisterCustomSave();
 }
 
 /// <summary>
@@ -234,30 +239,72 @@ public class SavedSpireField<TKey, TVal> : SpireField<TKey, TVal>, ISavedSpireFi
     {
         string typeName = typeof(TKey).Name;
         Name = $"{typeName}_{name}";
-        if (!ISavedSpireField.IsTypeSupported(typeof(TVal)))
+        
+        if (!ISavedSpireField.IsTypeSupported(typeof(TVal)) || !SavePatchUtils.IsTypeSupportedSavedProperty(typeof(TKey)))
         {
-            throw new NotSupportedException(
-                $"SavedSpireField {name} uses unsupported type {typeof(TVal).Name}."
-            );
+            IsBasegameSupported = false;
         }
         
         SavedSpireFieldPatch.Register(this);
     }
-    
+
+    public bool IsBasegameSupported { get; init; }
+
     public string Name { get; }
     public Type TargetType { get; } = typeof(TKey);
 
+    /// <summary>
+    /// Used to serialize value over net when custom save is used (value/target type not compatible with SavedProperty)
+    /// </summary>
+    public Action<TVal, PacketWriter>? Serializer { get; set; } = null;
+    /// <summary>
+    /// Used to deserialize value over net when custom save is used (value/target type not compatible with SavedProperty)
+    /// </summary>
+    public Func<PacketReader, TVal>? Deserializer { get; set; } = null;
+
+    /// <summary>
+    /// Store value in a SavedProperties instance.
+    /// </summary>
     public void Export(object model, SavedProperties props)
     {
         AddToProperties(props, Name, Get((TKey)model));
     } 
 
+    /// <summary>
+    /// Load value from a SavedProperties instance.
+    /// </summary>
     public void Import(object model, SavedProperties props)
     {
         if (TryGetFromProperties<TVal>(props, Name, out var val))
             Set((TKey)model, val);
     }
-    
+
+    public bool RegisterCustomSave()
+    {
+        Action<TVal, PacketWriter>? serializer = Serializer;
+        Func<PacketReader, TVal>? deserializer = Deserializer;
+        if (serializer == null || deserializer == null)
+        {
+            if (typeof(TVal).IsAssignableTo(typeof(IPacketSerializable)))
+            {
+                serializer = (val, writer) => ((IPacketSerializable)val!).Serialize(writer);
+                deserializer = (reader) =>
+                {
+                    var val = (TVal)typeof(TVal).CreateInstance();
+                    ((IPacketSerializable)val).Deserialize(reader);
+                    return val;
+                };
+            }
+            else if (!SavePatchUtils.TryGetSerializerDeserializer(out serializer, out deserializer))
+            {
+                BaseLibMain.Logger.Error($"Unable to register custom save for SavedSpireField {Name}; no serialization defined for" +
+                                         $"type {typeof(TVal).Name}. Set Serializer/Deserializer properties of SavedSpireField.");
+                return false;
+            }
+        }
+        return ExtendedSaveTypes.RegisterSavedValue<TKey, TVal>($"spirefield_{Name}", Get, Set, serializer, deserializer);
+    }
+
     private static void AddToProperties(SavedProperties props, string name, object? value)
     {
         switch (value)

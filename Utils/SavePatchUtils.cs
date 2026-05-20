@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
@@ -9,21 +10,6 @@ namespace BaseLib.Utils;
 //Utilities to help with adding properties to mod saves.
 public class SavePatchUtils
 {
-    private static readonly HashSet<Type> _supportedTypes =
-    [
-        typeof(int),
-        typeof(int[]),
-        typeof(ModelId),
-        typeof(bool),
-        typeof(string),
-        typeof(SerializableCard),
-        typeof(List<SerializableCard>)
-    ];
-    public static bool IsTypeSupported(Type type)
-    {
-        return _supportedTypes.Contains(type) || type.IsEnum;
-    }
-    
     /// <summary>
     /// Quickly sets up the properties of a JsonPropertyInfoValues object for an actual property.
     /// </summary>
@@ -80,6 +66,63 @@ public class SavePatchUtils
             PropertyName = propName,
             JsonPropertyName = propName
         };
+    }
+
+    public static bool IsTypeSupportedSavedProperty(Type fieldTargetType)
+    {
+        return fieldTargetType.IsAssignableTo(typeof(RelicModel))
+               || fieldTargetType.IsAssignableTo(typeof(CardModel));
+    }
+
+    public static bool TryGetSerializerDeserializer<T>(
+        [NotNullWhen(true)] out Action<T, PacketWriter>? serializer,
+        [NotNullWhen(true)] out Func<PacketReader, T>? deserializer)
+    {
+        serializer = SerializerDeserializerInfo<T>.Serializer!;
+        deserializer = SerializerDeserializerInfo<T>.Deserializer!;
+        return serializer != null && deserializer != null;
+    }
+
+    private static class SerializerDeserializerInfo<T>
+    {
+        public static Action<T, PacketWriter>? Serializer;
+        public static Func<PacketReader, T>? Deserializer;
+    }
+
+    static SavePatchUtils()
+    {
+        SerializerDeserializerInfo<bool>.Serializer = (val, writer) => writer.WriteBool(val);
+        SerializerDeserializerInfo<bool>.Deserializer = reader => reader.ReadBool();
+        
+        SerializerDeserializerInfo<byte>.Serializer = (val, writer) => writer.WriteByte(val);
+        SerializerDeserializerInfo<byte>.Deserializer = reader => reader.ReadByte();
+        SerializerDeserializerInfo<short>.Serializer = (val, writer) => writer.WriteShort(val);
+        SerializerDeserializerInfo<short>.Deserializer = reader => reader.ReadShort();
+        SerializerDeserializerInfo<int>.Serializer = (val, writer) => writer.WriteInt(val);
+        SerializerDeserializerInfo<int>.Deserializer = reader => reader.ReadInt();
+        SerializerDeserializerInfo<long>.Serializer = (val, writer) => writer.WriteLong(val);
+        SerializerDeserializerInfo<long>.Deserializer = reader => reader.ReadLong();
+        
+        SerializerDeserializerInfo<ushort>.Serializer = (val, writer) => writer.WriteUShort(val);
+        SerializerDeserializerInfo<ushort>.Deserializer = reader => reader.ReadUShort();
+        SerializerDeserializerInfo<uint>.Serializer = (val, writer) => writer.WriteUInt(val);
+        SerializerDeserializerInfo<uint>.Deserializer = reader => reader.ReadUInt();
+        SerializerDeserializerInfo<ulong>.Serializer = (val, writer) => writer.WriteULong(val);
+        SerializerDeserializerInfo<ulong>.Deserializer = reader => reader.ReadULong();
+        
+        SerializerDeserializerInfo<float>.Serializer = (val, writer) => writer.WriteFloat(val);
+        SerializerDeserializerInfo<float>.Deserializer = reader => reader.ReadFloat();
+        SerializerDeserializerInfo<double>.Serializer = (val, writer) => writer.WriteDouble(val);
+        SerializerDeserializerInfo<double>.Deserializer = reader => reader.ReadDouble();
+        //Slight loss of precision, but generally shouldn't be used for precise value communication.
+        SerializerDeserializerInfo<decimal>.Serializer = (val, writer) => writer.WriteDouble((double)val);
+        SerializerDeserializerInfo<decimal>.Deserializer = reader => (decimal)reader.ReadDouble();
+        
+        SerializerDeserializerInfo<string>.Serializer = (val, writer) => writer.WriteString(val);
+        SerializerDeserializerInfo<string>.Deserializer = reader => reader.ReadString();
+        
+        SerializerDeserializerInfo<ModelId>.Serializer = (val, writer) => writer.WriteFullModelId(val);
+        SerializerDeserializerInfo<ModelId>.Deserializer = reader => reader.ReadFullModelId();
     }
 }
 

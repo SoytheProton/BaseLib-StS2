@@ -2,6 +2,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Saves;
 
 namespace BaseLib.Patches.Saves;
@@ -24,6 +26,33 @@ public class ExtendedSaveTypes
     private static readonly Dictionary<Type, Func<IJsonTypeInfoResolver, JsonSerializerOptions, JsonTypeInfo>> ExtendedTypes = [];
     
     /// <summary>
+    /// Attempts to register a saved value. Returns false if the target type is unsupported.
+    /// </summary>
+    public static bool RegisterSavedValue<TargetType, T>(string id, Func<TargetType, T?> getter, Action<TargetType, T?> setter,
+        Action<T, PacketWriter> serializer, Func<PacketReader, T> deserializer)
+    {
+        var targetType = typeof(TargetType);
+
+        if (targetType.IsAssignableTo(typeof(CardModel)))
+        {
+            ExtendedSerializableCard.RegisterCardSave<T>(id,
+                card =>
+                {
+                    if (card is not TargetType target) return default;
+                    return getter(target);
+                },
+                (card, val) =>
+                {
+                    if (card is not TargetType target) return;
+                    setter(target, val);
+                }, serializer, deserializer);
+
+            return true;
+        }
+        return false;
+    }
+    
+    /// <summary>
     /// Registers a type to allow it to be saved and loaded by the basegame serializer.
     /// You are recommended to use the other shortcut methods provided by this class.
     /// </summary>
@@ -39,7 +68,7 @@ public class ExtendedSaveTypes
     /// Registers a general object/class type to be saved/loaded.
     /// Use the PropertyFunc and FieldFunc methods to define all properties and fields that will be saved.
     /// </summary>
-    public static void RegisterObjectSaveType<T>(params Func<JsonSerializerOptions, JsonPropertyInfo>[] dataFunctions) where T : new()
+    public static void RegisterObjectSaveType<T>(params Func<JsonSerializerOptions, JsonPropertyInfo>[] dataFunctions) where T : notnull, new()
     {
         if (ExtendedTypes.ContainsKey(typeof(T))) return;
         

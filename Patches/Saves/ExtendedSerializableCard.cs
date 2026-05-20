@@ -26,7 +26,7 @@ public class ExtendedSerializableCard
     /// <param name="getter">Gets the value to save given a card instance.</param>
     /// <param name="setter">Given a saved value, attaches it to a card instance.</param>
     /// <typeparam name="T">A type that implements IPacketSerializable and has a no-parameter constructor.</typeparam>
-    public static void RegisterCardSave<T>(string id, Func<CardModel, T> getter, Action<CardModel, T> setter)
+    public static void RegisterCardSave<T>(string id, Func<CardModel, T?> getter, Action<CardModel, T?> setter)
         where T : IPacketSerializable, new()
     {
         RegisterCardSave(id, getter, setter, 
@@ -48,7 +48,7 @@ public class ExtendedSerializableCard
     /// <param name="serializer">Writes the saved value with a PacketWriter.</param>
     /// <param name="deserializer">Retrives the saved value from a PacketReader.</param>
     /// <typeparam name="T">The saved type.</typeparam>
-    public static void RegisterCardSave<T>(string id, Func<CardModel, T> getter, Action<CardModel, T> setter,
+    public static void RegisterCardSave<T>(string id, Func<CardModel, T?> getter, Action<CardModel, T?> setter,
         Action<T, PacketWriter> serializer, Func<PacketReader, T> deserializer)
     {
         ExtendedSaveTypes.RegisterDictionarySaveType<string, T>();
@@ -67,7 +67,7 @@ public class ExtendedSerializableCard
                         obj => ExtendedData[obj].DictForType<T>(),
                         (obj, value) =>
                         {
-                            if (value == null) return;
+                            value ??= [];
                             ExtendedData[obj].Dictionaries[typeof(T)] = value;
                         })
                     )
@@ -78,7 +78,9 @@ public class ExtendedSerializableCard
         RegisteredSaves.InsertSorted(new (id,
             (model, data) =>
             {
-                if (!data.DictForType<T>().TryAdd(id, getter(model)))
+                var val = getter(model);
+                if (val == null) return;
+                if (!data.DictForType<T>().TryAdd(id, val))
                 {
                     BaseLibMain.Logger.Error($"DUPLICATE CARD SAVE KEY: [{typeof(T).Name}] {id}");
                 }
@@ -108,7 +110,9 @@ public class ExtendedSerializableCard
                 bool exists = reader.ReadBool();
                 if (exists)
                 {
-                    data.DictForType<T>()[id] = deserializer(reader);
+                    var val = deserializer(reader);
+                    if (val != null)
+                        data.DictForType<T>()[id] = val;
                 }
             }
         ));
