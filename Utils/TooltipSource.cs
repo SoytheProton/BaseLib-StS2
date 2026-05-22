@@ -4,6 +4,10 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BaseLib.Utils;
 
+/// <summary>
+/// Used as a parameter type; is implicitly converted from a typeof PowerModel, CardModel, PotionModel, or EnchantmentModel,
+/// or from a CardKeyword or StaticHoverTip enum value.
+/// </summary>
 public class TooltipSource
 {
     private readonly Func<CardModel, IHoverTip> _makeTip;

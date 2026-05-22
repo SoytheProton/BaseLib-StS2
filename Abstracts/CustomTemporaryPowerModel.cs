@@ -140,26 +140,73 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
             await ApplyPowerFunc(context, powerSource.Owner, InvertInternalPowerAmount ? -amount : amount, applier, cardSource, true);
     }
 
-
-    public override async Task AfterTurnEnd(PlayerChoiceContext choiceContext, CombatSide side)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        var powerSource = this;
+        if (!participants.Contains(Owner))
+            return;
+        
         if (InternallyAppliedPower is CustomTemporaryPowerModel)
         {
-            await PowerCmd.Remove(powerSource);
+            await PowerCmd.Remove(this);
             return;
         }
-        if ((!UntilEndOfOtherSideTurn && side != powerSource.Owner.Side) || (UntilEndOfOtherSideTurn && side == powerSource.Owner.Side))
+        
+        if ((!UntilEndOfOtherSideTurn && side != Owner.Side) || (UntilEndOfOtherSideTurn && side == Owner.Side))
             return;
-        if (powerSource.DynamicVars.Repeat.BaseValue > 0)
+        if (DynamicVars.Repeat.BaseValue > 0)
         {
-            powerSource.DynamicVars.Repeat.UpgradeValueBy(-1);
+            DynamicVars.Repeat.UpgradeValueBy(-1);
             return;
         }
-
-        powerSource.Flash();
-        await ApplyPowerFunc(choiceContext, powerSource.Owner, InvertInternalPowerAmount ? powerSource.Amount : -powerSource.Amount, powerSource.Owner, null, true);
-        await PowerCmd.Remove(powerSource);
+        
+        Flash();
+        await ApplyPowerFunc(choiceContext, Owner, InvertInternalPowerAmount ? Amount : -Amount, Owner, null, true);
+        await PowerCmd.Remove(this);
     }
 
+    
+    /*[HarmonyPatch]
+    class OldAfterTurnEndPatch
+    {
+        static MethodInfo? TargetMethod = AccessTools.PropertyGetter(typeof(PowerModel), "AfterTurnEnd");
+        
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            if (TargetMethod != null) yield return TargetMethod;
+        }
+
+        static bool Prepare()
+        {
+            return TargetMethod != null;
+        }
+        
+        [HarmonyPrefix]
+        static bool MaybeInstanced(PowerModel __instance, ref bool? __result)
+        {
+            if (__instance is not CustomTemporaryPowerModel tempPower) return true;
+
+            __result = tempPower.LastForXExtraTurns != 0;
+            return false;
+        }
+    }
+    
+    public async Task AfterTurnEndOld(PlayerChoiceContext choiceContext, CombatSide side)
+    {
+        if (InternallyAppliedPower is CustomTemporaryPowerModel)
+        {
+            await PowerCmd.Remove(this);
+            return;
+        }
+        if ((!UntilEndOfOtherSideTurn && side != Owner.Side) || (UntilEndOfOtherSideTurn && side == Owner.Side))
+            return;
+        if (DynamicVars.Repeat.BaseValue > 0)
+        {
+            DynamicVars.Repeat.UpgradeValueBy(-1);
+            return;
+        }
+
+        Flash();
+        await ApplyPowerFunc(choiceContext, Owner, InvertInternalPowerAmount ? Amount : -Amount, Owner, null, true);
+        await PowerCmd.Remove(this);
+    }*/
 }
