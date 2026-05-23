@@ -107,6 +107,7 @@ public static class CustomTargetType
     /// </param>
     public static void RegisterSingleTargetType(TargetType customType, Func<Creature, bool> canTarget)
     {
+        BaseLibMain.Logger.VeryDebug($"Registered single target type {customType}");
         SingleTargeting.Add(customType, canTarget);
     }
     
@@ -123,6 +124,7 @@ public static class CustomTargetType
     /// </param>
     public static void RegisterMultiTargetType(TargetType customType, Func<Creature, bool>? showReticleFor = null)
     {
+        BaseLibMain.Logger.VeryDebug($"Registered multi target type {customType}");
         MultiTargeting.Add(customType, showReticleFor ?? (_ => true));
     }
 }
@@ -406,7 +408,7 @@ internal class ControllerSingleCreatureTargetingPatch
 [HarmonyPatch(typeof(ActionTargetExtensions), nameof(ActionTargetExtensions.IsSingleTarget))]
 internal class IsSingleTargetPatch
 {
-    [HarmonyPrefix]
+    [HarmonyPostfix]
     static void CustomSingleTargets(TargetType targetType, ref bool __result)
     {
         if (__result) return;
