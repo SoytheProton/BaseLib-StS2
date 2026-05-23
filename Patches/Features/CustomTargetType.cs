@@ -107,7 +107,7 @@ public static class CustomTargetType
     /// </param>
     public static void RegisterSingleTargetType(TargetType customType, Func<Creature, bool> canTarget)
     {
-        BaseLibMain.Logger.Info($"Registered single target type {customType}");
+        BaseLibMain.Logger.VeryDebug($"Registered single target type {customType}");
         SingleTargeting.Add(customType, canTarget);
     }
     
@@ -124,7 +124,7 @@ public static class CustomTargetType
     /// </param>
     public static void RegisterMultiTargetType(TargetType customType, Func<Creature, bool>? showReticleFor = null)
     {
-        BaseLibMain.Logger.Info($"Registered multi target type {customType}");
+        BaseLibMain.Logger.VeryDebug($"Registered multi target type {customType}");
         MultiTargeting.Add(customType, showReticleFor ?? (_ => true));
     }
 }
