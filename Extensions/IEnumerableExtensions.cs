@@ -27,6 +27,12 @@ public static class IEnumerableExtensions
         return sb.ToString();
     }
 
+    internal static T LogCode<T>(this T code) where T : IEnumerable<CodeInstruction>
+    {
+        BaseLibMain.Logger.Info($"CODE:\n{code.Join(instruction => instruction.ToString(), "\n")}");
+        return code;
+    }
+
     public static void CheckCode(this IEnumerable<CodeInstruction> code)
     {
         //Check for duplicate or missing labels
