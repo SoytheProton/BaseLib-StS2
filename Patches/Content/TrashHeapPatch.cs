@@ -18,10 +18,12 @@ class TrashHeapRelicsPatch
         {
             return;
         }
-        var combined = new RelicModel[__result.Length + _customRelics.Length];
-        Array.Copy(__result, 0, combined, 0, __result.Length);
-        Array.Copy(_customRelics, 0, combined, __result.Length, _customRelics.Length);
-        __result = combined;
+
+        __result =
+        [
+            ..__result,
+            .._customRelics
+        ];
     }
 }
 
@@ -38,9 +40,11 @@ class TrashHeapCardsPatch
         {
             return;
         }
-        var combined = new CardModel[__result.Length + _customCards.Length];
-        Array.Copy(__result, 0, combined, 0, __result.Length);
-        Array.Copy(_customCards, 0, combined, __result.Length, _customCards.Length);
-        __result = combined;
+        
+        __result =
+        [
+            ..__result,
+            .._customCards
+        ];
     }
 }
