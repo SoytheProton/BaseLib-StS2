@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes;
 
-namespace BaseLib.Commands;
+namespace BaseLib.ConsoleCommands;
 
 public class OpenLogWindow : AbstractConsoleCmd
 {

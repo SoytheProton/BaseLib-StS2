@@ -1,8 +1,8 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using BaseLib.BaseLibScenes;
-using BaseLib.Commands;
 using BaseLib.Config;
+using BaseLib.ConsoleCommands;
 using Godot;
 using Godot.Collections;
 using HarmonyLib;

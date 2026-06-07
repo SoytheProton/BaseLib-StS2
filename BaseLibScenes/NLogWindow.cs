@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
-using BaseLib.Commands;
 using BaseLib.Config;
+using BaseLib.ConsoleCommands;
 using BaseLib.Extensions;
 using Godot;
 using MegaCrit.Sts2.Core.Logging;
