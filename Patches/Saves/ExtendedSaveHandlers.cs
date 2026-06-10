@@ -79,7 +79,7 @@ public static class ExtendedSaveHandlers<DataType, SerializableType> where Seria
     public static void RegisterSave<T>(string id, Func<DataType, T?> getter, Action<DataType, T?> setter)
         where T : IPacketSerializable, new()
     {
-        RegisterSave(id, getter, setter, 
+        RegisterSave<T>(id, getter, setter, 
             (val, writer) => val.Serialize(writer),
             (reader) =>
             {
@@ -88,7 +88,30 @@ public static class ExtendedSaveHandlers<DataType, SerializableType> where Seria
                 return val;
             });
     }
-    
+
+
+    /// <summary>
+    /// Registers a value to be saved attached to a specific serializable type and be copied in its Serialize/Deserialize methods.
+    /// </summary>
+    /// <param name="id">The ID of the saved value. Should ideally be a unique string involving the mod's ID.</param>
+    /// <param name="getter">Gets the value to save given an instance.</param>
+    /// <param name="setter">Given a saved value, attaches it to an instance.</param>
+    /// <param name="serializer">Writes the saved value with a PacketWriter.</param>
+    /// <param name="deserializer">Retrives the saved value from a PacketReader.</param>
+    /// <typeparam name="TargetType">The specific type the saved value is attached to.</typeparam>
+    /// <typeparam name="T">The saved type.</typeparam>
+    public static void RegisterSave<TargetType, T>(string id, Func<TargetType, T?> getter, Action<TargetType, T?> setter,
+        Action<T, PacketWriter> serializer, Func<PacketReader, T> deserializer)
+    {
+        RegisterSave<T>(id,
+            enchant => enchant is not TargetType target ? default : getter(target),
+            (enchant, val) =>
+            {
+                if (enchant is not TargetType target) return;
+                setter(target, val);
+            }, serializer, deserializer);
+    }
+
     /// <summary>
     /// Registers a value to be saved attached to a specific serializable type and be copied in its Serialize/Deserialize methods.
     /// </summary>
@@ -316,7 +339,7 @@ public static class ExtendedSavePatches
     [HarmonyPatch(typeof(SerializableCard), nameof(SerializableCard.Serialize))]
     static class SerializeExtendedCardData
     {
-        [HarmonyPrefix] //Prefix instead of postfix due to inconsistent written length of SerializableCard
+        [HarmonyPostfix] //Prefix instead of postfix due to inconsistent written length of SerializableCard
         //Difference between basegame is not an issue as this serialization is only used for net communication, not saves
         static void WriteExtended(SerializableCard __instance, PacketWriter writer)
         {
@@ -327,7 +350,7 @@ public static class ExtendedSavePatches
     [HarmonyPatch(typeof(SerializableCard), nameof(SerializableCard.Deserialize))]
     static class DeserializeExtendedCardData
     {
-        [HarmonyPrefix] //Prefix instead of postfix due to inconsistent written length of SerializableCard
+        [HarmonyPostfix]
         static void ReadExtended(SerializableCard __instance, PacketReader reader)
         {
             ExtendedSaveHandlers<CardModel, SerializableCard>.Read(__instance, reader);
@@ -366,8 +389,7 @@ public static class ExtendedSavePatches
     [HarmonyPatch(typeof(SerializableRelic), nameof(SerializableRelic.Serialize))]
     static class SerializeExtendedRelicData
     {
-        [HarmonyPrefix] //Prefix instead of postfix due to inconsistent written length of SerializableRelic
-        //Difference between basegame is not an issue as this serialization is only used for net communication, not saves
+        [HarmonyPostfix]
         static void WriteExtended(SerializableRelic __instance, PacketWriter writer)
         {
             ExtendedSaveHandlers<RelicModel, SerializableRelic>.Write(__instance, writer);
@@ -377,7 +399,7 @@ public static class ExtendedSavePatches
     [HarmonyPatch(typeof(SerializableRelic), nameof(SerializableRelic.Deserialize))]
     static class DeserializeExtendedRelicData
     {
-        [HarmonyPrefix] //Prefix instead of postfix due to inconsistent written length of SerializableRelic
+        [HarmonyPostfix]
         static void ReadExtended(SerializableRelic __instance, PacketReader reader)
         {
             ExtendedSaveHandlers<RelicModel, SerializableRelic>.Read(__instance, reader);
@@ -504,6 +526,47 @@ public static class ExtendedSavePatches
         static void ReadExtended(SerializableReward __instance, PacketReader reader)
         {
             ExtendedSaveHandlers<Reward, SerializableReward>.Read(__instance, reader);
+        }
+    }
+    
+    [HarmonyPatch(typeof(EnchantmentModel), nameof(EnchantmentModel.ToSerializable))]
+    static class PrepExtendedEnchantmentData
+    {
+        [HarmonyPostfix]
+        static void ExtendedDataForEnchantment(EnchantmentModel __instance, SerializableEnchantment __result)
+        {
+            var data = new ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>.ExtendedSaveData(__instance);
+            ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>.ExtendedData[__result] = data;
+        }
+    }
+
+    [HarmonyPatch(typeof(EnchantmentModel), nameof(EnchantmentModel.FromSerializable))]
+    static class LoadExtendedEnchantmentData
+    {
+        [HarmonyPostfix]
+        static void LoadExtendedData(SerializableEnchantment save, EnchantmentModel __result)
+        {
+            ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>.Load(save, __result);
+        }
+    }
+
+    [HarmonyPatch(typeof(SerializableEnchantment), nameof(SerializableEnchantment.Serialize))]
+    static class SerializeExtendedEnchantmentData
+    {
+        [HarmonyPostfix]
+        static void WriteExtended(SerializableEnchantment __instance, PacketWriter writer)
+        {
+            ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>.Write(__instance, writer);
+        }
+    }
+
+    [HarmonyPatch(typeof(SerializableEnchantment), nameof(SerializableEnchantment.Deserialize))]
+    static class DeserializeExtendedEnchantmentData
+    {
+        [HarmonyPostfix]
+        static void ReadExtended(SerializableEnchantment __instance, PacketReader reader)
+        {
+            ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>.Read(__instance, reader);
         }
     }
     

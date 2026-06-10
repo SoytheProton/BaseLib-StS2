@@ -40,16 +40,18 @@ public class ExtendedSaveTypes
 
     /// <summary>
     /// Returns true if BaseLib supports saving values on this type.
+    /// Currently used only to notify if a SavedProperty can be converted into a SavedSpireField to save a type
+    /// unsupported by basegame.
     /// </summary>
-    /// <param name="t"></param>
-    /// <returns></returns>
     public static bool IsSaveHolderSupported(Type t)
     {
         return t.IsAssignableTo(typeof(CardModel))
                || t.IsAssignableTo(typeof(RelicModel))
                || t.IsAssignableTo(typeof(PotionModel))
+               || t.IsAssignableTo(typeof(EnchantmentModel))
                || t.IsAssignableTo(typeof(Player))
-               || t.IsAssignableTo(typeof(Reward));
+               || t.IsAssignableTo(typeof(Reward)) 
+               || t.IsAssignableTo(typeof(IRunState));
     }
     
     /// <summary>
@@ -62,97 +64,50 @@ public class ExtendedSaveTypes
 
         if (targetType.IsAssignableTo(typeof(CardModel)))
         {
-            ExtendedSaveHandlers<CardModel, SerializableCard>.RegisterSave<T>(id,
-                card =>
-                {
-                    if (card is not TargetType target) return default;
-                    return getter(target);
-                },
-                (card, val) =>
-                {
-                    if (card is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<CardModel, SerializableCard>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
         if (targetType.IsAssignableTo(typeof(RelicModel)))
         {
-            ExtendedSaveHandlers<RelicModel, SerializableRelic>.RegisterSave<T>(id,
-                relic =>
-                {
-                    if (relic is not TargetType target) return default;
-                    return getter(target);
-                },
-                (relic, val) =>
-                {
-                    if (relic is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<RelicModel, SerializableRelic>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
         if (targetType.IsAssignableTo(typeof(PotionModel)))
         {
-            ExtendedSaveHandlers<PotionModel, SerializablePotion>.RegisterSave<T>(id,
-                potion =>
-                {
-                    if (potion is not TargetType target) return default;
-                    return getter(target);
-                },
-                (potion, val) =>
-                {
-                    if (potion is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<PotionModel, SerializablePotion>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
+
+            return true;
+        }
+        if (targetType.IsAssignableTo(typeof(EnchantmentModel)))
+        {
+            ExtendedSaveHandlers<EnchantmentModel, SerializableEnchantment>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
         if (targetType.IsAssignableTo(typeof(Player)))
         {
-            ExtendedSaveHandlers<Player, SerializablePlayer>.RegisterSave<T>(id,
-                player =>
-                {
-                    if (player is not TargetType target) return default;
-                    return getter(target);
-                },
-                (player, val) =>
-                {
-                    if (player is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<Player, SerializablePlayer>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
         if (targetType.IsAssignableTo(typeof(Reward)))
         {
-            ExtendedSaveHandlers<Reward, SerializableReward>.RegisterSave<T>(id,
-                reward =>
-                {
-                    if (reward is not TargetType target) return default;
-                    return getter(target);
-                },
-                (reward, val) =>
-                {
-                    if (reward is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<Reward, SerializableReward>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
         if (targetType.IsAssignableTo(typeof(IRunState)))
         {
-            ExtendedSaveHandlers<IRunState, SerializableRun>.RegisterSave<T>(id,
-                reward =>
-                {
-                    if (reward is not TargetType target) return default;
-                    return getter(target);
-                },
-                (reward, val) =>
-                {
-                    if (reward is not TargetType target) return;
-                    setter(target, val);
-                }, serializer, deserializer);
+            ExtendedSaveHandlers<IRunState, SerializableRun>
+                .RegisterSave(id, getter, setter, serializer, deserializer);
 
             return true;
         }
