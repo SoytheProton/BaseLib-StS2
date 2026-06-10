@@ -2,7 +2,7 @@ using BaseLib.BaseLibScenes;
 using BaseLib.Config;
 using Godot;
 
-namespace BaseLib.Commands;
+namespace BaseLib.ConsoleCommands;
 
 /// <summary>
 /// Sizes and positions the log window relative to the game window so ultrawide / multi-monitor
