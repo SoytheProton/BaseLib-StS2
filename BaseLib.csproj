@@ -21,9 +21,9 @@
         <PackageId>Alchyr.Sts2.BaseLib</PackageId>
         <Title>BaseLib-StS2</Title>
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
-        <Version>3.1.9</Version>
+        <Version>3.2.1</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>Rewrite AsyncMethodCall to fix some issues, small additions to CardModifier, MoveBuilder, temp power fixes, uid/user path support for some methods, SeenByDefault on pools, fix scene conversion registration for CustomMonsterModel</PackageReleaseNotes>
+        <PackageReleaseNotes>Trash heap interface, MultiPileCardSelect, downgrade hook, bugfixes, config attribute to change property loc key</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
