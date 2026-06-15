@@ -5,19 +5,18 @@ namespace BaseLib.Utils;
 public static class ReflectionUtils
 {
     private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
-    public static Action<T, TValue>? GetSetterForProperty<T, TValue>(string propName) where T : class
+    public static Action<T?, TValue> GetSetterForProperty<T, TValue>(string propName) where T : class
     {
         var propertyInfo = typeof(T).GetProperty(propName, DeclaredOnlyLookup);
 
         if (propertyInfo is null)
         {
-            BaseLibMain.Logger.Warn($"Property {propName} not found in type {typeof(T).FullName}");
-            return null;
+            throw new InvalidOperationException($"Property {propName} not found in type {typeof(T).FullName}");
         }
 
         return GetPropertySetter(propertyInfo);
 
-        static Action<T, TValue> GetPropertySetter(PropertyInfo prop)
+        static Action<T?, TValue> GetPropertySetter(PropertyInfo prop)
         {
             var setter = prop.GetSetMethod(nonPublic: true);
             if (setter is not null)

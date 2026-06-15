@@ -1,4 +1,5 @@
 ﻿using BaseLib.Extensions;
+using BaseLib.Patches.Content;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
@@ -9,6 +10,11 @@ namespace BaseLib.Abstracts;
 
 public abstract class CustomMonsterModel : MonsterModel, ICustomModel, ISceneConversions
 {
+    public CustomMonsterModel()
+    {
+        CustomContentDictionary.RegisterType(GetType());
+    }
+    
     /// <summary>
     /// Override this or place your scene at res://scenes/creature_visuals/modname-class_name.tscn
     /// </summary>
@@ -16,6 +22,17 @@ public abstract class CustomMonsterModel : MonsterModel, ICustomModel, ISceneCon
 
     /// <summary>
     /// Use if you want to generate creature visuals entirely yourself.
+    /// If you do, you'll also need to override AssetPaths to not include VisualPath.
+    /// <code>public override IEnumerable&lt;string&gt; AssetPaths
+    /// {
+    ///     get
+    ///     {
+    ///         List&lt;string&gt; assetPaths = [];
+    ///         foreach (AbstractIntent intent in GetIntents())
+    ///             assetPaths.AddRange(intent.AssetPaths);
+    ///        return assetPaths;
+    ///     }
+    /// }</code>
     /// Otherwise, just override CustomVisualPath.
     /// </summary>
     /// <returns></returns>

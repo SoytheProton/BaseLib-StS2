@@ -107,7 +107,7 @@ public class InstructionMatcher() : IMatcher
 
         public bool OpcodeMatch(CodeInstruction matchTest)
         {
-            return Opcodes.Contains(matchTest.opcode);
+            return Opcodes.Length == 0 || Opcodes.Contains(matchTest.opcode);
         }
 
         public override string ToString()
@@ -142,6 +142,50 @@ public class InstructionMatcher() : IMatcher
 
     //Building
     //https://learn.microsoft.com/en-us/dotnet/api/system.reflection.emit.opcodes.add?view=net-10.0
+    //Special multi-possible cases
+    public InstructionMatcher any()
+    {
+        _target.Add(new InstructionMatch([]));
+        return this;
+    }
+    
+    public InstructionMatcher stloc_any()
+    {
+        _target.Add(new InstructionMatch([
+            OpCodes.Stloc,
+            OpCodes.Stloc_0,
+            OpCodes.Stloc_1,
+            OpCodes.Stloc_2,
+            OpCodes.Stloc_3,
+            OpCodes.Stloc_S,
+        ]));
+        return this;
+    }
+    public InstructionMatcher ldloc_any()
+    {
+        _target.Add(new InstructionMatch([
+            OpCodes.Ldloc,
+            OpCodes.Ldloc_0,
+            OpCodes.Ldloc_1,
+            OpCodes.Ldloc_2,
+            OpCodes.Ldloc_3,
+            OpCodes.Ldloc_S,
+            OpCodes.Ldloca,
+            OpCodes.Ldloca_S,
+        ]));
+        return this;
+    }
+
+    public InstructionMatcher call_any()
+    {
+        _target.Add(new InstructionMatch([
+            OpCodes.Call,
+            OpCodes.Callvirt
+        ]));
+        return this;
+    }
+    
+    //Normal opcodes
     public InstructionMatcher opcode(OpCode opCode)
     {
         _target.Add(new(opCode));
@@ -195,18 +239,6 @@ public class InstructionMatcher() : IMatcher
     public InstructionMatcher ldloc_3()
     {
         _target.Add(new(OpCodes.Ldloc_3));
-        return this;
-    }
-    public InstructionMatcher stloc_any()
-    {
-        _target.Add(new InstructionMatch([
-            OpCodes.Stloc,
-            OpCodes.Stloc_0,
-            OpCodes.Stloc_1,
-            OpCodes.Stloc_2,
-            OpCodes.Stloc_3,
-            OpCodes.Stloc_S,
-        ]));
         return this;
     }
     public InstructionMatcher stloc_0()
@@ -501,8 +533,12 @@ public class InstructionMatcher() : IMatcher
         return this;
     }
     /*Cpobj = 0x70,
-    Ldobj = 0x71,
-    Ldstr = 0x72,*/
+    Ldobj = 0x71,*/
+    public InstructionMatcher ldstr(string? s = null) //0x72
+    {
+        _target.Add(new(OpCodes.Ldstr, s));
+        return this;
+    }
     public InstructionMatcher newobj(ConstructorInfo? constructor) //0x73
     {
         _target.Add(new(OpCodes.Newobj, constructor));
@@ -649,9 +685,13 @@ Localloc = 0xfe0f,
 Endfilter = 0xfe11,
 Unaligned_ = 0xfe12,
 Volatile_ = 0xfe13,
-Tail_ = 0xfe14,
-Initobj = 0xfe15,
-Constrained_ = 0xfe16,
+Tail_ = 0xfe14,*/
+    public InstructionMatcher initobj(Type? t = null) //0xfe15
+    {
+        _target.Add(new(OpCodes.Initobj, t));
+        return this;
+    } 
+/*Constrained_ = 0xfe16,
 Cpblk = 0xfe17,
 Initblk = 0xfe18,
 Rethrow = 0xfe1a,

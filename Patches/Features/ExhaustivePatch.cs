@@ -1,24 +1,37 @@
-﻿using BaseLib.Cards.Variables;
-using BaseLib.Utils.Patching;
-using Godot;
+﻿using System.Reflection;
+using BaseLib.Cards.Variables;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
 
 namespace BaseLib.Patches.Features;
 
-[HarmonyPatch(typeof(CardModel), "GetResultPileType")]
+[HarmonyPatch(typeof(CardModel))]
 public static class ExhaustivePatch
 {
-    static void Postfix(CardModel __instance, ref PileType __result)
+    static MethodBase TargetMethod()
     {
-        if (GetExhaustive(__instance) == 1)
+        var targetMethod = AccessTools.DeclaredMethod(typeof(CardModel), "GetResultPileTypeForCardPlay");
+        if (targetMethod == null)
+            targetMethod = AccessTools.DeclaredMethod(typeof(CardModel), "GetResultPileType");
+
+        return targetMethod;
+    }
+    
+    [HarmonyPostfix]
+    static void ExhaustForExhaustive(CardModel __instance, ref PileType __result)
+    {
+        if (ExhaustForExhaustive(__instance))
         {
             __result = PileType.Exhaust;
         }
     }
+
+    static bool ExhaustForExhaustive(CardModel card)
+    {
+        return GetExhaustive(card) == 1;
+    }
+    
 
     public static int GetExhaustive(CardModel card)
     {

@@ -155,10 +155,17 @@ public abstract partial class ModConfig
         return default;
     }
 
+    /// <summary>
+    /// Restores the default value for all relevant config properties: all except those marked with
+    /// [<see cref="ConfigIgnoreAttribute">ConfigIgnore</see>] or
+    /// [<see cref="ConfigIgnoreRestoreDefaultsAttribute">ConfigIgnoreRestoreDefaults</see>].
+    /// </summary>
     protected void RestoreDefaultsNoConfirm()
     {
         foreach (var property in ConfigProperties)
         {
+            if (property.GetCustomAttribute<ConfigIgnoreRestoreDefaultsAttribute>() != null) continue;
+
             var defaultValue = GetDefaultValue<object?>(property.Name);
             property.SetValue(null, defaultValue);
         }
@@ -413,7 +420,12 @@ public abstract partial class ModConfig
 
     protected string GetLabelText(string labelName)
     {
-        var loc = LocString.GetIfExists("settings_ui", $"{ModPrefix}{StringHelper.Slugify(labelName)}.title");
+        return GetLabelText(labelName, true);
+    }
+    protected string GetLabelText(string labelName, bool slugify)
+    {
+        var key = slugify ? StringHelper.Slugify(labelName) : labelName;
+        var loc = LocString.GetIfExists("settings_ui", $"{ModPrefix}{key}.title");
         return loc != null ? loc.GetFormattedText() : labelName;
     }
 

@@ -27,6 +27,14 @@ public abstract class CustomEncounterModel : EncounterModel, ICustomModel
         }
     }
 
+    /// <summary>
+    /// Specifies where this encounter can appear.
+    /// Generally encounters are act specific, so a check like "act is Glory" is recommended.
+    /// If making a custom act, you are suggested to add your encounters to the act this way and leave
+    /// the act's normal encounter list empty.
+    /// </summary>
+    /// <param name="act"></param>
+    /// <returns></returns>
     public abstract bool IsValidForAct(ActModel act);
     
     //Todo - Support non-event:/ bgm? needs audio stuff
@@ -52,11 +60,34 @@ public abstract class CustomEncounterModel : EncounterModel, ICustomModel
 
     /// <summary>
     /// The path to an encounter scene.
-    /// An encounter scene is a 1920x1080 Control with Full Rect anchors, and Marker2D children for enemy positions.
+    /// An encounter scene is a 1920x1080 Control with Full Rect anchors and MouseFilter Ignore,
+    /// with Marker2D children for enemy positions.
     /// The names of these markers can be used with CreatureCmd.Add when spawning additional enemies.
     /// Initial enemies will be placed at these markers in the order they exist in the scene.
+    /// If using a custom scene the <see cref="Slots"/> method must return the names of all the slots.
+    /// A default implementation that reads the custom scene is provided, but it can be overridden.
     /// </summary>
     public virtual string? CustomScenePath => null;
+
+    private readonly Dictionary<string, List<string>> _sceneSlotsDict = [];
+    public override IReadOnlyList<string> Slots
+    {
+        get
+        {
+            if (!HasScene) return [];
+            var path = ScenePath.SimplifyPath();
+            if (!_sceneSlotsDict.TryGetValue(path, out var slots))
+            {
+                var scene = ResourceLoader.Load<PackedScene>(path).Instantiate();
+                if (scene == null) return [];
+
+                _sceneSlotsDict[path] = slots = scene.GetChildren().OfType<Marker2D>()
+                    .Select(marker => marker.Name.ToString()).ToList();
+            }
+
+            return slots;
+        }
+    }
 
     /// <summary>
     /// Should not be necessary to override; will return true if CustomScenePath returns a valid resource path or
@@ -86,7 +117,7 @@ public abstract class CustomEncounterModel : EncounterModel, ICustomModel
     /// Override this method if you want to provide a custom encounter background for your scene using custom paths.
     /// To do so, return a new CustomBackgroundAssets object.
     /// Alternatively you can place your assets at res://scenes/backgrounds/modname-encounter_name/layers and
-    /// res://scenes/backgrounds/modname-encounter_name/modname-encounter_name_background.tscn, then override 
+    /// res://scenes/backgrounds/modname-encounter_name/modname-encounter_name_background.tscn, then override HasCustomBackground.
     /// </summary>
     public virtual BackgroundAssets? CustomEncounterBackground(ActModel parentAct, Rng rng)
     {
@@ -95,6 +126,7 @@ public abstract class CustomEncounterModel : EncounterModel, ICustomModel
     
     /// <summary>
     /// See RoomIconPathPatch<seealso cref="RoomIconPathPatch"/>
+    /// These are used as boss icons.
     /// </summary>
     public virtual string? CustomRunHistoryIconPath => null;
     public virtual string? CustomRunHistoryIconOutlinePath => null;

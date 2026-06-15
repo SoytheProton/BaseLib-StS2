@@ -33,11 +33,14 @@ public abstract class ConstructedCardModel(
     protected readonly List<(CardKeyword, UpgradeType)> UpgradeKeywords = [];
     private readonly List<DynamicVar> _constructedDynamicVars = [];
     private readonly List<TooltipSource> _hoverTips = [];
+    private readonly List<Func<CardModel, IEnumerable<IHoverTip>>> _multiHoverTips = [];
     private readonly HashSet<CardTag> _constructedTags = [];
 
     protected sealed override IEnumerable<DynamicVar> CanonicalVars => _constructedDynamicVars;
     public sealed override IEnumerable<CardKeyword> CanonicalKeywords => _cardKeywords;
-    protected sealed override IEnumerable<IHoverTip> ExtraHoverTips => _hoverTips.Select(tip => tip.Tip(this));
+    protected sealed override IEnumerable<IHoverTip> ExtraHoverTips => _hoverTips.Select(t => t.Tip(this))
+        .Concat(_multiHoverTips.SelectMany(mt => mt.Invoke(this)));
+    
     protected sealed override HashSet<CardTag> CanonicalTags => _constructedTags;
 
     protected ConstructedCardModel WithVars(params DynamicVar[] vars)
@@ -60,6 +63,10 @@ public abstract class ConstructedCardModel(
     {
         _constructedDynamicVars.Add(new DynamicVar(name, baseVal).WithUpgrade(upgrade));
         return this;
+    }
+    protected ConstructedCardModel WithVar(DynamicVar var)
+    {
+        return WithVars(var);
     }
     
     /// <summary>
@@ -100,6 +107,16 @@ public abstract class ConstructedCardModel(
         WithEnergyTip();
         return this;
     }
+
+    /// <summary>
+    /// Generates a <seealso cref="HealVar"/>HealVar with given base value.
+    /// </summary>
+    protected ConstructedCardModel WithHeal(int baseVal, int upgrade = 0)
+    {
+        var dynVar = new HealVar(baseVal).WithUpgrade(upgrade);
+        _constructedDynamicVars.Add(dynVar);
+        return this;
+    }
     
     /// <summary>
     /// Generates a <seealso cref="PowerVar{T}"/>PowerVar and adds a tooltip. You can also just pass a PowerVar to <seealso cref="WithVars"/>WithVars.
@@ -107,7 +124,7 @@ public abstract class ConstructedCardModel(
     protected ConstructedCardModel WithPower<T>(int baseVal, int upgrade = 0) where T : PowerModel
     {
         _constructedDynamicVars.Add(new PowerVar<T>(baseVal).WithUpgrade(upgrade));
-        _hoverTips.Add(new(_=>HoverTipFactory.FromPower<T>()));
+        _hoverTips.Add(new(_ => BetaMainCompatibility._HoverTipFactory.FromPower<T>()));
         return this;
     }
 
@@ -117,7 +134,7 @@ public abstract class ConstructedCardModel(
     protected ConstructedCardModel WithPower<T>(string name, int baseVal, int upgrade = 0) where T : PowerModel
     {
         _constructedDynamicVars.Add(new PowerVar<T>(name, baseVal).WithUpgrade(upgrade));
-        _hoverTips.Add(new(_=>HoverTipFactory.FromPower<T>()));
+        _hoverTips.Add(new(_ => BetaMainCompatibility._HoverTipFactory.FromPower<T>()));
         return this;
     }
     
@@ -261,9 +278,12 @@ public abstract class ConstructedCardModel(
         {
             case CustomCalculatedVar:
             case CustomCalculatedBlockVar:
-            case CustomCalculatedDamageVar:
                 _constructedDynamicVars.Add(new DynamicVar($"{var.Name}Base", baseVal).WithUpgrade(upgrade));
                 _constructedDynamicVars.Add(new DynamicVar($"{var.Name}Extra", multVal).WithUpgrade(bonusUpgrade));
+                break;
+            case CustomCalculatedDamageVar:
+                _constructedDynamicVars.Add(new DynamicVar($"{var.Name}Base", baseVal).WithUpgrade(upgrade));
+                _constructedDynamicVars.Add(new CustomExtraDamageVar(var.Name, multVal).WithUpgrade(bonusUpgrade));
                 break;
             case CalculatedDamageVar:
                 _constructedDynamicVars.Add(new CalculationBaseVar(baseVal).WithUpgrade(upgrade));
@@ -288,7 +308,7 @@ public abstract class ConstructedCardModel(
     }
 
     /// <summary>
-    /// Adds a keyword to the card. If <paramref name="removeOnUpgrade"/> is true, the keyword will be removed when the card is upgraded.
+    /// Adds a keyword to the card.
     /// </summary>
     protected ConstructedCardModel WithKeyword(CardKeyword keyword, UpgradeType upgradeType = UpgradeType.None)
     {
@@ -319,10 +339,39 @@ public abstract class ConstructedCardModel(
         return this;
     }
     
+    /// <summary>
+    /// Adds multiple hover tips to the card.
+    /// </summary>
+    protected ConstructedCardModel WithTips(Func<CardModel, IEnumerable<IHoverTip>> multiTipSource)
+    {
+        _multiHoverTips.Add(multiTipSource);
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds the tooltip for Energy to this card.
+    /// </summary>
+    /// <returns></returns>
     protected ConstructedCardModel WithEnergyTip()
     {
         _hoverTips.Add(new(HoverTipFactory.ForEnergy));
         return this;
+    }
+    
+    /// <summary>
+    /// Adds a CardTip for a card that will be upgraded when this card is upgraded.
+    /// </summary>
+    /// <param name="modifyTipCard">An action that will receive the preview card and current card before the tip is generated.</param>
+    protected ConstructedCardModel WithUpgradingCardTip<T>(Action<T, CardModel>? modifyTipCard = null)
+        where T : CardModel
+    {
+        return WithTip(new TooltipSource(card =>
+        {
+            var tipCard = ModelDb.Card<T>().ToMutable();
+            if (card.IsUpgraded) tipCard.UpgradeInternal();
+            if (tipCard is T t) modifyTipCard?.Invoke(t, card);
+            return HoverTipFactory.FromCard(tipCard);
+        }));
     }
     
     /// <summary>

@@ -1,5 +1,6 @@
-using System.Reflection;
+using BaseLib.Patches.Saves;
 using BaseLib.Utils;
+using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
@@ -38,27 +39,23 @@ static class SavedSpireFieldPatch
         foreach (var field in GetFieldsForModel(model))
             field.Import(model, __instance);
     }
-
-    internal static void CheckSavedSpireField(FieldInfo field)
-    {
-        Type fType = field.FieldType;
-                
-        if (!fType.IsGenericType || fType.GetGenericTypeDefinition() != typeof(SavedSpireField<,>))
-            return;
-
-        field.GetValue(null); //Trigger field initialization
-    }
     
     internal static void AddFieldsSorted()
     {
+        BaseLibMain.Logger.Info($"Found {RegisteredFields.Count} SavedSpireFields.");
         RegisteredFields.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 
         foreach (var field in RegisteredFields)
         {
-            InjectNameIntoBaseGameCache(field.Name);
+            if (field.IsBasegameSupported)
+            {
+                InjectNameIntoBaseGameCache(field.Name);
+            }
+            else if (!field.RegisterCustomSave())
+            {
+                BaseLibMain.Logger.Error($"SavedSpireField {field.Name} will not be saved as it is of an unsupported type.");
+            }
         }
-        
-        BaseLibMain.Logger.Info($"Registered {RegisteredFields.Count} SavedSpireFields.");
     }
     
     private static void InjectNameIntoBaseGameCache(string name)
@@ -76,8 +73,10 @@ static class SavedSpireFieldPatch
         {
             propertyToId[name] = idToProperty.Count;
             idToProperty.Add(name);
+            
+            BaseLibMain.Logger.Debug($"Added saved property name to basegame cache: {name} => {propertyToId[name]}");
 
-            int newBitSize = (int)Math.Ceiling(Math.Log2(idToProperty.Count));
+            int newBitSize = Mathf.CeilToInt(Math.Log2(idToProperty.Count));
 
             AccessTools
                 .Property(typeof(SavedPropertiesTypeCache), "NetIdBitSize")

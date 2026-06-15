@@ -6,6 +6,9 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BaseLib.Patches.Localization;
 
+/// <summary>
+/// Adds additional tips to a card model's hovertips.
+/// </summary>
 [HarmonyPatch(typeof(CardModel), nameof(CardModel.HoverTips), MethodType.Getter)]
 public class ExtraTooltips
 {
@@ -26,12 +29,15 @@ public class ExtraTooltips
             ]);
     }
 
+    /// <summary>
+    /// Adds additional tips to a card model's hovertips.
+    /// </summary>
     public static void AddTips(List<IHoverTip> tips, CardModel card)
     {
         //dynvar tips
         foreach (var dynVar in card.DynamicVars.Values)
         {
-            var tip = DynamicVarExtensions.DynamicVarTips[dynVar]?.Invoke();
+            var tip = DynamicVarExtensions.DynamicVarTips[dynVar]?.Invoke(dynVar);
             if (tip != null) tips.Add(tip);
         }
     }

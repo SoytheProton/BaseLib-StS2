@@ -8,6 +8,8 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
         <PathMap>$(AppOutputBase)=.\</PathMap>
+        <GodotDisabledSourceGenerators>GodotPluginsInitializer</GodotDisabledSourceGenerators>
+        <LangVersion>14</LangVersion>
     </PropertyGroup>
 
     <!-- NuGet Package Configuration -->
@@ -19,9 +21,9 @@
         <PackageId>Alchyr.Sts2.BaseLib</PackageId>
         <Title>BaseLib-StS2</Title>
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
-        <Version>3.0.3</Version>
+        <Version>3.2.1</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>adjustments/additions to SimpleLoc, enum gen methods, sort common actions selection when from draw</PackageReleaseNotes>
+        <PackageReleaseNotes>Trash heap interface, MultiPileCardSelect, downgrade hook, bugfixes, config attribute to change property loc key</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
@@ -33,6 +35,7 @@
         <LocalizeTemplates>false</LocalizeTemplates>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationFile>$(MSBuildProjectDirectory)/$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     </PropertyGroup>
 
     <!-- Sts2Path / Sts2DataDir: Sts2PathDiscovery.props (+ optional local.props). GodotPath in local.props for .pck export. -->
@@ -44,6 +47,10 @@
         </Reference>
         <Reference Include="sts2">
             <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+        <Reference Include="SmartFormat">
+            <HintPath>$(Sts2DataDir)/SmartFormat.dll</HintPath>
             <Private>false</Private>
         </Reference>
         <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="All"/>
@@ -65,7 +72,7 @@
         <None Include="Notes.txt" />
         <None Include="export_presets.cfg" />
         <None Include="BaseLib.json" />
-        <None Include="Publish/*" />
+        <None Include="Publish/**/*" />
         <None Include="**/*.gd" />
     </ItemGroup>
 

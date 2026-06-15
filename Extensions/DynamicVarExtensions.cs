@@ -2,7 +2,6 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -15,7 +14,7 @@ namespace BaseLib.Extensions;
 
 public static class DynamicVarExtensions
 {
-    public static readonly SpireField<DynamicVar, Func<IHoverTip>> DynamicVarTips = new(() => null);
+    public static readonly SpireField<DynamicVar, Func<DynamicVar, IHoverTip>> DynamicVarTips = new(() => null);
     public static readonly SpireField<DynamicVar, decimal?> DynamicVarUpgrades = new(() => null);
 
     public static TDynamicVar WithUpgrade<TDynamicVar>(this TDynamicVar dynamicVar, decimal upgradeValue) where TDynamicVar : DynamicVar
@@ -39,10 +38,11 @@ public static class DynamicVarExtensions
             return amount;
         }
 
-        CombatState? combatState = creature.CombatState;
+        var combatState = BetaMainCompatibility.Creature_.CombatState.Get(creature);
         if (combatState == null) return amount;
 
-        amount = Hook.ModifyBlock(combatState, creature, amount, props, cardSource, cardPlay, out var modifiers);
+        amount = BetaMainCompatibility.Hook_.ModifyBlock
+            .Invoke<decimal>(null, combatState, creature, amount, props, cardSource, cardPlay, null);
         amount = Math.Max(amount, 0m);
         return amount;
     }
@@ -57,13 +57,13 @@ public static class DynamicVarExtensions
     {
         string key = locKey ?? var.GetType().GetPrefix() + StringHelper.Slugify(var.Name);
 
-        DynamicVarTips[var] = () =>
+        DynamicVarTips[var] = (locVar) =>
         {
             LocString locString = new(locTable, key + ".title");
             LocString locString2 = new(locTable, key + ".description");
 
-            locString.Add(var); //Dynamic var tip should not refer to any variables other than itself...
-            locString2.Add(var);
+            locString.Add(locVar); //Dynamic var tip should not refer to any variables other than itself...
+            locString2.Add(locVar);
 
             return new HoverTip(locString, locString2);
         };

@@ -39,26 +39,38 @@ public static partial class SimpleLoc
         foreach (var key in __result.Keys.ToList())
         {
             var processed = __result[key];
-            if (processed.StartsWith('#'))
+            if (modUseSimpleLoc)
+            {
+                if (processed.StartsWith('#'))
+                {
+                    __result[key] = processed[1..];
+                }
+                else
+                {
+                    __result[key] = Simplify(processed);
+                }
+            }
+            else if (processed.StartsWith('#'))
             {
                 __result[key] = Simplify(processed[1..]);
-            }
-            else if (modUseSimpleLoc)
-            {
-                __result[key] = Simplify(processed);
             }
         }
     }
 
-    [GeneratedRegex(@"\*(.+?)\*?(\s|\b)")] private static partial Regex HighlightRegex { get; }
+    [GeneratedRegex(@"(?<=^|[^/])\*({.+?}|.+?(?=$|[\s*.,|}]))\*?")]
+    private static partial Regex GoldHighlightRegex { get; }
 
+    [GeneratedRegex(@"(?<=^|[^/])\$({.+?}|.+?(?=$|[\s$.,|}]))\$?")]
+    static partial Regex BlueHighlightRegex { get; }
+
+    [GeneratedRegex(@"({)([^:}.]+)([:}])")] private static partial Regex NormalVariableRegex { get; }
     [GeneratedRegex(@"!(.*?)!")] private static partial Regex DiffVariableRegex { get; }
     [GeneratedRegex(@"@(.*?)@")] private static partial Regex InverseVariableRegex { get; }
     
-    [GeneratedRegex(@"(?:(?:-(.+?)-)|(?:\+(.+?)\+))(?:\+(.+?)\+)?")]
+    [GeneratedRegex(@"(?<=^|[^/])(?:(?:-(.+?)-)|(?:\+(.*?[^/])\+))(?:\+(.*?[^/])\+)?")] 
     private static partial Regex UpgradeSwapRegex { get; }
 
-    [GeneratedRegex(@"({)([^{]+?)((?::.*)?}.*?)\((.+?)\)")]
+    [GeneratedRegex(@"(.*?{)([^{]+?)((?::[^{]*)?}(?:(?:[^{]*?[^{/])|(?:)))\(([^()]+?)\)")]
     private static partial Regex PluralizeRegex { get; }
     
     [GeneratedRegex(@"\[(?:(E\?)|(E+))\]")]
@@ -85,14 +97,20 @@ public static partial class SimpleLoc
     }
     private static string Simplify(string loc)
     {
-        loc = HighlightRegex.Replace(loc, "[gold]$1[/gold]$2");
+        if (loc.StartsWith('#')) return loc; //if loc starts with '##' remove first one and cancel simplify
+        loc = GoldHighlightRegex.Replace(loc, "[gold]$1[/gold]");
+        loc = BlueHighlightRegex.Replace(loc, "[blue]$1[/blue]");
+        loc = loc.Replace("/*", "*").Replace("/$", "$");
+        loc = NormalVariableRegex.Replace(loc, match => $"{match.Groups[1].Value}{SpecialVarDictionary.GetValueOrDefault(match.Groups[2].Value, match.Groups[2].Value)}{match.Groups[3].Value}");
         loc = DiffVariableRegex.Replace(loc, match => ReplaceVarName(match, ":diff()"));
         loc = InverseVariableRegex.Replace(loc, match => ReplaceVarName(match, ":inverseDiff()"));
         loc = EnergyIconsRegex.Replace(loc, MakeEnergyIcons);
         loc = PluralizeRegex.Replace(loc, "$1$2$3{$2:plural:|$4}"); //Plural first so that upgrade var is not considered
+        loc = loc.Replace("/(", "(");
         loc = UpgradeSwapRegex.Replace(loc, MakeUpgradeSwap);
+        loc = loc.Replace("/-", "-").Replace("/+", "+");
         
-        BaseLibMain.Logger.Info($"SimplifiedLoc: {loc}");
+        BaseLibMain.Logger.VeryDebug($"SimplifiedLoc: {loc}");
             
         return loc;
     }

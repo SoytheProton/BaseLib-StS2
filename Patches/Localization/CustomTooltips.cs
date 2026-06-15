@@ -6,6 +6,9 @@ using MegaCrit.Sts2.Core.Localization;
 
 namespace BaseLib.Patches.Localization;
 
+/// <summary>
+/// Patch for getting custom tooltips for keywords from HoverTipFactory.
+/// </summary>
 class CustomTooltips
 {
     [HarmonyPatch(typeof(HoverTipFactory), nameof(HoverTipFactory.FromKeyword))]
