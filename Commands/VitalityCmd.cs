@@ -1,11 +1,12 @@
-﻿using MegaCrit.Sts2.Core.Combat;
+﻿using BaseLib.Hooks;
+using BaseLib.Patches.Features;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Combat.History;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
-using BaseLib.Hooks;
-using BaseLib.Patches;
 
 namespace BaseLib.Commands;
 
@@ -19,7 +20,7 @@ public class VitalityCmd
     {
         if (CombatManager.Instance.IsOverOrEnding)
             return 0M;
-        CombatState combatState = creature.CombatState;
+        ICombatState combatState = creature.CombatState;
         await BeforeVitalityGained(combatState, creature, amount, cardPlay?.Card);
         Decimal modifiedAmount = amount;
         IEnumerable<AbstractModel> modifiers;
@@ -31,7 +32,7 @@ public class VitalityCmd
             SfxCmd.Play("event:/sfx/heal");
             VfxCmd.PlayOnCreatureCenter(creature, "vfx/vfx_cross_heal");
             VitalityPatch.VitalityField.SetVitality(creature, (int) amount + VitalityPatch.VitalityField.GetVitality(creature));
-            CombatManager.Instance.History.Add(new VitalityGainedEntry((int)modifiedAmount, cardPlay, creature, combatState.RoundNumber, combatState.CurrentSide, CombatManager.Instance.History));
+            CombatManager.Instance.History.Add(combatState, new VitalityGainedEntry((int)modifiedAmount, cardPlay, creature, combatState.RoundNumber, combatState.CurrentSide, CombatManager.Instance.History, combatState.Players));
             if (fast)
                 await Cmd.CustomScaledWait(0.0f, 0.03f);
             else
@@ -42,7 +43,7 @@ public class VitalityCmd
     }
     
     static decimal ModifyVitality(
-        CombatState combatState,
+        ICombatState combatState,
         Creature creature,
         Decimal amount,
         CardModel? cardSource,
@@ -79,7 +80,7 @@ public class VitalityCmd
     }
     
     static async Task BeforeVitalityGained(
-        CombatState combatState,
+        ICombatState combatState,
         Creature creature,
         Decimal amount,
         CardModel? cardSource)
@@ -95,7 +96,7 @@ public class VitalityCmd
     }
     
     static async Task AfterModifyingVitalityAmount(
-        CombatState combatState,
+        ICombatState combatState,
         Decimal amount,
         CardModel? cardSource,
         CardPlay? cardPlay,
@@ -112,7 +113,7 @@ public class VitalityCmd
     }
     
     static async Task AfterVitalityGained(
-        CombatState combatState,
+        ICombatState combatState,
         Creature creature,
         Decimal amount,
         CardModel? cardSource)
@@ -146,14 +147,15 @@ public class VitalityCmd
             Creature receiver,
             int roundNumber,
             CombatSide currentSide,
-            CombatHistory history)
-            : base(receiver, roundNumber, currentSide, history)
+            CombatHistory history,
+            IEnumerable<Player> players)
+            : base(receiver, roundNumber, currentSide, history, players)
         {
             Amount = amount;
             CardPlay = cardPlay;
         }
 
-        public static string GetId(Creature creature)
+        private static string GetId(Creature creature)
         {
             return !creature.IsPlayer ? creature.Monster.Id.Entry : creature.Player.Character.Id.Entry;
         }

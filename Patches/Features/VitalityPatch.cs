@@ -7,7 +7,9 @@ using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
 using MegaCrit.Sts2.Core.Saves;
@@ -17,8 +19,9 @@ namespace BaseLib.Patches.Features;
 
 public static class VitalityPatch
 {
-    private static readonly Color VitalityOutlineColor = new Color("FFC800");
-    private static readonly Color VitalityTextOutlineColor = new Color("998000");
+    private static readonly Color VitalityHeartColor = new Color("FFC800");
+    private static readonly Color VitalityOutlineColor = new Color((255f+80f)/255f,(220f+40f)/255f,(100)/255f);
+    private static readonly Color VitalityTextOutlineColor = new Color("505000");
     
     public static class VitalityField
     {
@@ -30,7 +33,7 @@ public static class VitalityPatch
         public static readonly SpireField<Creature, Action<int,int, Creature>?> VitalityChanged = new(() => null);
         public static readonly SpireField<Creature, Action<int,int>> VitalityChanged2 = new(() => null); // this exists only for CombatStateTracker.
         public static readonly SpireField<Creature, Tween?> VitalityTween = new(() => null);
-        public static void SetVitality(Creature creature, int value)
+        public static void SetVitality(Creature creature, int value)    
         {
             if (value < 0)
                 throw new ArgumentException("Block must be positive", nameof (value));
@@ -186,7 +189,7 @@ public static class VitalityPatch
             // Swap block icon for heart, tinted yellow
             var icon = vitalityContainer.GetNode<TextureRect>("BlockIcon");
             icon.Texture = GD.Load<Texture2D>("res://images/atlases/ui_atlas.sprites/top_bar/top_bar_heart.tres");
-            icon.SelfModulate = VitalityOutlineColor;
+            icon.SelfModulate = VitalityHeartColor;
 
             var shaderCode = @"
             shader_type canvas_item;
@@ -199,7 +202,7 @@ public static class VitalityPatch
             shader.Code = shaderCode;
             var material = new ShaderMaterial();
             material.Shader = shader;
-            material.SetShaderParameter("tint_color", VitalityOutlineColor);
+            material.SetShaderParameter("tint_color", VitalityHeartColor);
             icon.Material = material;
 
             var label = vitalityContainer.GetNode<MegaLabel>("BlockLabel");
@@ -375,4 +378,18 @@ public static class VitalityPatch
             }
         }
     }
+    
+    [HarmonyPatch(typeof(Hook))] 
+    [HarmonyPatch(nameof(Hook.AfterCombatEnd))]
+    public class CombatEndPatch 
+    { 
+        static void Postfix(ICombatState? combatState) 
+        {
+            foreach (Creature c in combatState?.Creatures)
+            {
+                VitalityField.SetVitality(c, 0);
+            }
+        }
+    }
+
 }
